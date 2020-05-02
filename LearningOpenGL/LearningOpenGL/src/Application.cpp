@@ -10,6 +10,10 @@
 #include "util.h"
 #include "ShaderLoader.h"
 
+GLint u_Color = -1;
+float greenVal = 0.0f;
+float greenValInc = 0.05f;
+
 static void Init()
 {
 	float vertices[] = {
@@ -42,6 +46,17 @@ static void Init()
 
 	GLuint shader = LoadShader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
 	glUseProgram(shader);
+
+	u_Color = glGetUniformLocation(shader, "u_Color");
+	glUniform4f(u_Color, 0.6f, 1.0f, 0.9f, 1.0f);
+}
+
+void UpdateGreenValue()
+{
+	glUniform4f(u_Color, 0.6f, greenVal, 0.9f, 1.0f);
+	if ((greenVal < 0.0f) || (greenVal > 1.0f))
+		greenValInc *= -1;
+	greenVal += greenValInc;
 }
 
 int main(void)
@@ -61,6 +76,7 @@ int main(void)
 	}
 
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
 
 	if (glewInit() != GLEW_OK)
 		return -1;
@@ -74,6 +90,7 @@ int main(void)
 	while (!glfwWindowShouldClose(window))
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
+		UpdateGreenValue();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		glfwSwapBuffers(window);
 		glfwPollEvents();

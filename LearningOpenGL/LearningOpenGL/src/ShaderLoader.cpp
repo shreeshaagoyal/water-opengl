@@ -6,7 +6,6 @@
 
 #include "ShaderLoader.h"
 
-// TODO: make a function to read in any file into a string var
 static std::string ReadFile(const std::string& filepath)
 {
 	std::fstream stream(filepath);
