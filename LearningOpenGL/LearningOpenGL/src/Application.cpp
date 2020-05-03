@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <memory>
 #include <windows.h>
 
 #include "util.h"
@@ -24,7 +25,7 @@ GLuint shader;
 VertexBuffer* vb;
 IndexBuffer* ib;
 
-static void Init()
+static void Init(std::unique_ptr<VertexBuffer>& vb, std::unique_ptr<IndexBuffer>& ib)
 {
 	float vertices[] = {
 		-0.5f, -0.5f, // 0
@@ -42,13 +43,13 @@ static void Init()
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	vb = new VertexBuffer(vertices, 4 * 2 * sizeof(float));
+	vb = std::make_unique<VertexBuffer>(vertices, 4 * 2 * sizeof(float));
 
 	/* Link vertex buffer to vao */
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
 	glEnableVertexAttribArray(0);
 
-	ib = new IndexBuffer(indices, 6);
+	ib = std::make_unique<IndexBuffer>(indices, 6);
 
 	shader = LoadShader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
 	glUseProgram(shader);
@@ -102,24 +103,26 @@ int main(void)
 	EnableGLDebugCallback();
 	PrintOpenGlVersionInfo();
 
-	Init();
-
-	while (!glfwWindowShouldClose(window))
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
+		std::unique_ptr<VertexBuffer> vb;
+		std::unique_ptr<IndexBuffer> ib;
 
-		glUseProgram(shader);
-		glBindVertexArray(vao);
-		ib->Bind();
+		Init(vb, ib);
 
-		UpdateGreenValue();
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		while (!glfwWindowShouldClose(window))
+		{
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			glUseProgram(shader);
+			glBindVertexArray(vao);
+			ib->Bind();
+
+			UpdateGreenValue();
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+			glfwSwapBuffers(window);
+			glfwPollEvents();
+		}
 	}
-
-	delete vb;
-	delete ib;
 
 	glfwTerminate();
 	return 0;
