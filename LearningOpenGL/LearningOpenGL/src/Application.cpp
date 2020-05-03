@@ -9,6 +9,11 @@
 
 #include "util.h"
 #include "ShaderLoader.h"
+#include "Renderer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
+
+#define ASSERT(x) if (!(x)) __debugbreak();
 
 GLint u_Color = -1;
 float greenVal = 0.0f;
@@ -16,8 +21,8 @@ float greenValInc = 0.05f;
 
 GLuint vao;
 GLuint shader;
-GLuint vBuffer;
-GLuint iBuffer;
+VertexBuffer* vb;
+IndexBuffer* ib;
 
 static void Init()
 {
@@ -37,19 +42,13 @@ static void Init()
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	/* Initialize vertex buffer */
-	glGenBuffers(1, &vBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vBuffer);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), vertices, GL_STATIC_DRAW);
+	vb = new VertexBuffer(vertices, 4 * 2 * sizeof(float));
 
 	/* Link vertex buffer to vao */
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
 	glEnableVertexAttribArray(0);
 
-	/* Initialize index buffer */
-	glGenBuffers(1, &iBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW);
+	ib = new IndexBuffer(indices, 6);
 
 	shader = LoadShader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
 	glUseProgram(shader);
@@ -60,6 +59,9 @@ static void Init()
 	/* Unbind everything */
 	glBindVertexArray(0);
 	glUseProgram(0);
+	
+	vb->Unbind();
+	ib->Unbind();
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
@@ -106,25 +108,18 @@ int main(void)
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		/* Bind shader */
 		glUseProgram(shader);
-
-		/* Bind vertex array */
-		// Don't need to bind vertex buffer anymore because we have already linked the vertex buffer to vao
 		glBindVertexArray(vao);
-
-		/* Set up layout of vertex buffer */
-		// glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
-		// glEnableVertexAttribArray(0);
-
-		/* Bind index buffer */
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iBuffer);
+		ib->Bind();
 
 		UpdateGreenValue();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	delete vb;
+	delete ib;
 
 	glfwTerminate();
 	return 0;
