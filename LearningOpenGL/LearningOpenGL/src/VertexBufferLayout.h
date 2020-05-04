@@ -31,10 +31,34 @@ private:
 	GLsizei m_Stride;
 public:
 	VertexBufferLayout() : m_Stride(0) {}
-	template<typename T> void Push(GLint count);
-	template<> void Push<GLfloat>(GLint count);
-	template<> void Push<GLuint>(GLint count);
-	template<> void Push<GLubyte>(GLint count);
+	
+	template<typename T>
+	void Push(GLint count)
+	{
+		static_assert(false);
+	}
+
+	template<>
+	void Push<GLfloat>(GLint count)
+	{
+		m_Elements.push_back({ GL_FLOAT, count, GL_FALSE });
+		m_Stride += count * BufferLayoutElement::GetSizeOfType(GL_FLOAT);
+	}
+
+	template<>
+	void Push<GLuint>(GLint count)
+	{
+		m_Elements.push_back({ GL_UNSIGNED_INT, count, GL_FALSE });
+		m_Stride += count * BufferLayoutElement::GetSizeOfType(GL_UNSIGNED_INT);
+	}
+
+	template<>
+	void Push<GLubyte>(GLint count)
+	{
+		m_Elements.push_back({ GL_UNSIGNED_BYTE, count, GL_TRUE });
+		m_Stride += count * BufferLayoutElement::GetSizeOfType(GL_UNSIGNED_BYTE);
+	}
+
 	inline const std::vector<BufferLayoutElement>& GetElements() const { return m_Elements; }
 	inline GLsizei GetStride() const { return m_Stride; }
 };

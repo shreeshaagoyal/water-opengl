@@ -1,5 +1,6 @@
 #include "util.h"
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <windows.h>
 #include <iostream>
 
@@ -7,17 +8,6 @@ void Crash()
 {
 	*(reinterpret_cast<char*>(0)) = 0;
 }
-
-typedef void (GLAPIENTRY* DEBUGPROC)
-(
-	GLenum source,
-	GLenum type,
-	GLuint id,
-	GLenum severity,
-	GLsizei length,
-	const GLchar* message,
-	const void* userParam
-);
 
 static void GLAPIENTRY GLDebugCallback
 (
@@ -67,4 +57,12 @@ void PrintOpenGlVersionInfo()
 	printVersion(GL_VERSION);
 	printVersion(GL_VENDOR);
 	printVersion(GL_RENDERER);
+}
+
+/* Create an OpenGL context with the CORE_PROFILE */
+void SwitchToCoreProfile()
+{
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // Version 3.3
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Set OpenGL profile to be core
 }

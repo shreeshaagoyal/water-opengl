@@ -9,26 +9,17 @@
 #include <windows.h>
 
 #include "util.h"
-#include "ShaderLoader.h"
-#include "Renderer.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "VertexArray.h"
+#include "Shader.h"
 
-#define ASSERT(x) if (!(x)) __debugbreak();
-
-GLint u_Color = -1;
 float greenVal = 0.0f;
 float greenValInc = 0.05f;
 
-GLuint vao;
-GLuint shader;
-VertexBuffer* vb;
-IndexBuffer* ib;
-
-void UpdateGreenValue()
+void UpdateGreenValue(Shader& shader)
 {
-	glUniform4f(u_Color, 0.6f, greenVal, 0.9f, 1.0f);
+	shader.SetUniform4f("u_Color", 0.6f, greenVal, 0.9f, 1.0f);
 	if ((greenVal < 0.0f) || (greenVal > 1.0f))
 		greenValInc *= -1;
 	greenVal += greenValInc;
@@ -41,10 +32,7 @@ int main(void)
 	if (!glfwInit())
 		return -1;
 
-	/* Create an OpenGL context with the CORE_PROFILE */
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // Version 3.3
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Set OpenGL profile to be core
+	SwitchToCoreProfile();
 
 	window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
 	if (!window)
@@ -84,27 +72,24 @@ int main(void)
 
 		IndexBuffer ib(indices, 6);
 
-		shader = LoadShader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
-		glUseProgram(shader);
-
-		u_Color = glGetUniformLocation(shader, "u_Color");
-		glUniform4f(u_Color, 0.6f, 1.0f, 0.9f, 1.0f);
+		Shader shader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
+		shader.SetUniform4f("u_Color", 0.6f, 1.0f, 0.9f, 1.0f);
 
 		/* Unbind everything */
 		va.Unbind();
-		glUseProgram(0);
 		vb.Unbind();
 		ib.Unbind();
+		shader.Unbind();
 
 		while (!glfwWindowShouldClose(window))
 		{
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			glUseProgram(shader);
+			shader.Bind();
 			va.Bind();
 			ib.Bind();
 
-			UpdateGreenValue();
+			UpdateGreenValue(shader);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 			glfwSwapBuffers(window);
 			glfwPollEvents();
