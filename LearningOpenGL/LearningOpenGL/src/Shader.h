@@ -16,12 +16,14 @@ private:
 	GLuint CompileShader(unsigned int shaderType, const std::string& source);
 	GLuint CreateShader(const std::string& vertexShader, const std::string& fragmentShader);
 	
-	GLint GetUniformLocation(const std::string& name);
-	std::unordered_map<std::string, GLint> m_UniformLocationCache;
+	GLint GetUniformLocation(const std::string& name) const;
+	mutable std::unordered_map<std::string, GLint> m_UniformLocationCache;
 public:
 	Shader(const std::string& vertexFilepath, const std::string& fragmentFilepath);
 	~Shader();
 	void Bind() const;
 	void Unbind() const;
+	void SetUniform1i(const std::string& name, int v);
+	void SetUniform1f(const std::string& name, float v);
 	void SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3);
 };

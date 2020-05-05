@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "Renderer.h"
+#include "util.h"
 
 Shader::Shader(const std::string& vertexFilepath, const std::string& fragmentFilepath)
 	: m_VertexFilepath(vertexFilepath), m_FragmentFilepath(fragmentFilepath), m_RendererID(0)
@@ -28,12 +28,22 @@ void Shader::Unbind() const
 	glUseProgram(0);
 }
 
+void Shader::SetUniform1i(const std::string& name, int v)
+{
+	glUniform1i(GetUniformLocation(name), v);
+}
+
+void Shader::SetUniform1f(const std::string& name, float v)
+{
+	glUniform1f(GetUniformLocation(name), v);
+}
+
 void Shader::SetUniform4f(const std::string& name, float v0, float v1, float v2, float v3)
 {
 	glUniform4f(GetUniformLocation(name), v0, v1, v2, v3);
 }
 
-GLint Shader::GetUniformLocation(const std::string& name)
+GLint Shader::GetUniformLocation(const std::string& name) const
 {
 	if (m_UniformLocationCache.find(name) != m_UniformLocationCache.end())
 		return m_UniformLocationCache[name];
