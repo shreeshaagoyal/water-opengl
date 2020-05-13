@@ -16,8 +16,20 @@
 #include "Renderer.h"
 #include "Texture.h"
 
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+
+int windowWidth = 960;
+int windowHeight = 540;
+
+int squareSideLength = 200;
+
 float greenVal = 0.0f;
 float greenValInc = 0.05f;
+int camera_x = 0;
+int cameraDelta_x = -10;
+int cameraDeltaReset_x = windowWidth + squareSideLength;
+glm::mat4 mvp;
 
 void UpdateGreenValue(Shader& shader)
 {
@@ -25,6 +37,24 @@ void UpdateGreenValue(Shader& shader)
 	if ((greenVal < 0.0f) || (greenVal > 1.0f))
 		greenValInc *= -1;
 	greenVal += greenValInc;
+}
+
+void UpdateRotationMatrix(Shader& shader)
+{
+	int cameraTranslation;
+	if (camera_x < ((windowWidth + squareSideLength) / std::abs(cameraDelta_x)))
+	{
+		cameraTranslation = cameraDelta_x;
+		camera_x++;
+	}
+	else
+	{
+		cameraTranslation = cameraDeltaReset_x;
+		camera_x = 0;
+	}
+	glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-1 * cameraTranslation, 0, 0));
+	mvp *= view;
+	shader.SetUniformMat4f("u_MVP", mvp);
 }
 
 int main(void)
@@ -36,7 +66,7 @@ int main(void)
 
 	SwitchToCoreProfile();
 
-	window = glfwCreateWindow(640, 640, "Hello World", NULL, NULL);
+	window = glfwCreateWindow(windowWidth, windowHeight, "Hello World", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -53,11 +83,12 @@ int main(void)
 	PrintOpenGlVersionInfo();
 
 	{
+		float height = 100.0f;
 		float vertices[] = {
-			-0.5f, -0.5f, 0.0f, 0.0f, // 0
-			 0.5f, -0.5f, 1.0f, 0.0f, // 1
-			 0.5f,  0.5f, 1.0f, 1.0f, // 2
-			-0.5f,  0.5f, 0.0f, 1.0f  // 3
+			(float)(-1 * squareSideLength), height, 0.0f, 0.0f,
+			0.0f, height, 1.0f, 0.0f,
+			0.0f, height + (float)squareSideLength, 1.0f, 1.0f,
+			(float)(-1 * squareSideLength), height + (float)squareSideLength, 0.0f, 1.0f
 		};
 
 		unsigned int indices[] = {
@@ -77,6 +108,12 @@ int main(void)
 		va.AddBufferAndLayout(vb, layout);
 
 		IndexBuffer ib(indices, 6);
+
+		/* Create projection matrix */
+		glm::mat4 proj = glm::ortho(0.0f, (float)windowWidth, 0.0f, (float)windowHeight, -1.0f, 1.0f);
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0, 10, 0));
+
+		mvp = proj * model;
 
 		Shader shader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
 		shader.SetUniform4f("u_Color", 0.6f, 1.0f, 0.9f, 1.0f);
@@ -98,6 +135,7 @@ int main(void)
 			renderer.Clear();
 
 			shader.Bind();
+			UpdateRotationMatrix(shader);
 			UpdateGreenValue(shader);
 			renderer.Draw(va, ib, shader);
 			
