@@ -1,37 +1,23 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <memory>
-#include <windows.h>
-
-#include "util.h"
-#include "VertexBuffer.h"
-#include "IndexBuffer.h"
-#include "VertexArray.h"
-#include "Shader.h"
-#include "Renderer.h"
-
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
+#include "stdafx.h"
 
 int windowWidth = 960;
 int windowHeight = 540;
 
-int squareSideLength = 500;
+float defaultMaxRadius = windowHeight;
+float defaultThickness = 2.0f;
+float defaultRadiusInc = 2.0f;
 
-float radius = 0.0f;
-float radiusInc = 2.0f;
+std::set<std::unique_ptr<Ripple>> ripples;
 
-void UpdateRadius(Shader& shader)
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-	shader.SetUniform1f("u_Radius", radius);
-	if ((radius < 0.0f) || (radius > (squareSideLength / 2)))
-		radiusInc *= -1;
-	radius += radiusInc;
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		std::cout << "MOUSE: [" << xpos << "," << ypos << "]" << std::endl;
+		ripples.insert(std::make_unique<Ripple>(xpos, ypos, 0.0f, defaultRadiusInc, 70.0f, defaultThickness));
+	}
 }
 
 int main(void)
@@ -52,6 +38,7 @@ int main(void)
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
 
 	if (glewInit() != GLEW_OK)
 		return -1;
@@ -62,11 +49,12 @@ int main(void)
 	{
 		float offsetWidth = 0.0f;
 		float offsetHeight = 0.0f;
+		int maxRadius = std::max(windowWidth, windowHeight);
 		float vertices[] = {
-			offsetWidth, offsetHeight, 0.0f, 0.0f,
-			offsetWidth + (float)squareSideLength, offsetHeight, 1.0f, 0.0f,
-			offsetWidth + (float)squareSideLength, offsetHeight + (float)squareSideLength, 1.0f, 1.0f,
-			offsetWidth, offsetHeight + (float)squareSideLength, 0.0f, 1.0f
+			0.0f,		0.0f,		0.0f, 0.0f,
+			maxRadius,  0.0f,		1.0f, 0.0f,
+			maxRadius,  maxRadius,	1.0f, 1.0f,
+			0.0f,		maxRadius,	0.0f, 1.0f
 		};
 
 		unsigned int indices[] = {
@@ -80,6 +68,7 @@ int main(void)
 		VertexArray va;
 		VertexBuffer vb(vertices, 4 * 4 * sizeof(float));
 
+		// First 2 floats are position. Second 2 floats are texture coords.
 		VertexBufferLayout layout;
 		layout.Push<float>(2);
 		layout.Push<float>(2);
@@ -90,14 +79,9 @@ int main(void)
 		/* Create projection matrix */
 		glm::mat4 proj = glm::ortho(0.0f, (float)windowWidth, 0.0f, (float)windowHeight, -1.0f, 1.0f);
 		glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
-		glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
-
-		glm::mat4 mvp = proj * view * model;
 
 		Shader shader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
 		shader.SetUniform4f("u_Color", 0.6f, 1.0f, 0.9f, 1.0f);
-		shader.SetUniform4f("u_Center", ((float)squareSideLength + offsetWidth) / 2, ((float)squareSideLength + offsetHeight) / 2, 0.0f, 1.0f);
-		shader.SetUniformMat4f("u_MVP", mvp);
 
 		/* Unbind everything */
 		va.Unbind();
@@ -110,10 +94,41 @@ int main(void)
 		while (!glfwWindowShouldClose(window))
 		{
 			renderer.Clear();
-
 			shader.Bind();
-			UpdateRadius(shader);
-			renderer.Draw(va, ib, shader);
+
+			{
+				std::vector<std::unique_ptr<Ripple>*> ripplesToDelete;
+				for (const auto& ripple : ripples)
+					if (ripple->deletePending)
+						ripplesToDelete.push_back(const_cast<std::unique_ptr<Ripple>*>(&ripple));
+
+				for (const auto& ripple : ripplesToDelete)
+					ripples.erase(*ripple);
+			}
+
+			for (const auto& ripple : ripples)
+			{
+				glm::vec3 translation
+				{
+					ripple->xpos - ripple->maxRadius,
+					windowHeight - ripple->ypos - ripple->maxRadius,
+					0.0f
+				};
+				glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
+				glm::mat4 mvp = proj * view * model;
+				shader.SetUniformMat4f("u_MVP", mvp);
+				shader.SetUniform1f("u_Thickness", ripple->thickness);
+				shader.SetUniform4f
+				(
+					"u_Center",
+					offsetWidth + translation.x + ripple->maxRadius,
+					offsetHeight + translation.y + ripple->maxRadius,
+					0.0f,
+					1.0f
+				);
+				ripple->UpdateRadius(shader);
+				renderer.Draw(va, ib, shader);
+			}
 			
 			glfwSwapBuffers(window);
 			glfwPollEvents();

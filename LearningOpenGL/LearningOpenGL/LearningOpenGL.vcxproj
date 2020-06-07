@@ -129,6 +129,7 @@
     <ClCompile Include="src\EnableHighPerfGPU.cpp" />
     <ClCompile Include="src\IndexBuffer.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
+    <ClCompile Include="src\Ripple.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\util.cpp" />
@@ -281,7 +282,9 @@
   <ItemGroup>
     <ClInclude Include="src\IndexBuffer.h" />
     <ClInclude Include="src\Renderer.h" />
+    <ClInclude Include="src\Ripple.h" />
     <ClInclude Include="src\Shader.h" />
+    <ClInclude Include="src\stdafx.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\util.h" />
     <ClInclude Include="src\vendor\glm\common.hpp" />
