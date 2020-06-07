@@ -3,11 +3,22 @@
 int windowWidth = 960;
 int windowHeight = 540;
 
-float defaultMaxRadius = windowHeight;
 float defaultThickness = 2.0f;
 float defaultRadiusInc = 2.0f;
 
 std::set<std::unique_ptr<Ripple>> ripples;
+
+auto lastRippleTime = std::chrono::steady_clock::now();
+void insertRipple(double xpos, double ypos)
+{
+	auto now = std::chrono::steady_clock::now();
+	auto msSinceLastRipple = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRippleTime).count();
+	if (msSinceLastRipple > 100)
+	{
+		ripples.insert(std::make_unique<Ripple>(xpos, ypos, 0.0f, defaultRadiusInc, 140.0f, defaultThickness));
+		lastRippleTime = now;
+	}
+}
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
@@ -15,9 +26,16 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	{
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
-		std::cout << "MOUSE: [" << xpos << "," << ypos << "]" << std::endl;
-		ripples.insert(std::make_unique<Ripple>(xpos, ypos, 0.0f, defaultRadiusInc, 70.0f, defaultThickness));
+		insertRipple(xpos, ypos);
 	}
+}
+
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+		return;
+	else
+		insertRipple(xpos, ypos);
 }
 
 int main(void)
@@ -39,6 +57,7 @@ int main(void)
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
 
 	if (glewInit() != GLEW_OK)
 		return -1;
