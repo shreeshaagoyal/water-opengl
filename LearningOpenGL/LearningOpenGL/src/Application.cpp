@@ -110,6 +110,9 @@ int main(void)
 
 		Renderer renderer;
 
+		auto lastFrameTime = std::chrono::steady_clock::now();
+		size_t frameCount = 0;
+		double fpsTotal = 0;
 		while (!glfwWindowShouldClose(window))
 		{
 			renderer.Clear();
@@ -151,6 +154,22 @@ int main(void)
 			
 			glfwSwapBuffers(window);
 			glfwPollEvents();
+
+			auto now = std::chrono::steady_clock::now();
+			auto msSinceLastFrame = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastFrameTime).count();
+			double fps = 1000 / (double)msSinceLastFrame;
+			fpsTotal += fps;
+			frameCount++;
+			int waitTime = 100;
+
+			if (frameCount == waitTime)
+			{
+				std::cout << "AVG FPS: " << fpsTotal / waitTime << std::endl;
+				fpsTotal = 0;
+				frameCount = 0;
+			}
+
+			lastFrameTime = now;
 		}
 	}
 
