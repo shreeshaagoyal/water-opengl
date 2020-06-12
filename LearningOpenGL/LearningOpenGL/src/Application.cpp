@@ -3,7 +3,6 @@
 int windowWidth = 960;
 int windowHeight = 540;
 
-float defaultThickness = 2.0f;
 float defaultRadiusInc = 2.0f;
 
 std::set<std::unique_ptr<Ripple>> ripplePool;
@@ -13,10 +12,9 @@ void insertRipple(float xpos, float ypos)
 {
 	auto now = std::chrono::steady_clock::now();
 	auto msSinceLastRipple = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRippleTime).count();
-	if (msSinceLastRipple > 100)
+	if (msSinceLastRipple > 200)
 	{
-		//ripples.insert(std::make_unique<Ripple>(xpos, ypos, 0.0f, defaultRadiusInc, 140.0f, defaultThickness));
-		ripplePool.insert(std::make_unique<Ripple>(xpos, ypos));
+		ripplePool.insert(std::make_unique<Ripple>(xpos, ypos, 0.0f, defaultRadiusInc, 140.0f));
 		lastRippleTime = now;
 	}
 }
@@ -39,12 +37,6 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 	else
 		insertRipple(static_cast<float>(xpos), static_cast<float>(windowHeight - ypos));
 }
-
-// TODO: move this elsewhere
-struct Vertex
-{
-	std::array<float, 2> Position;
-};
 
 int main(void)
 {
@@ -73,6 +65,7 @@ int main(void)
 
 	EnableGLDebugCallback();
 	PrintOpenGlVersionInfo();
+	EnableBasicBlending();
 
 	{
 		float offsetWidth = 0.0f;
@@ -82,7 +75,7 @@ int main(void)
 
 		const size_t upperLimit = 1000;
 
-		VertexBuffer vb(nullptr, upperLimit * 4 * sizeof(Vertex), true);
+		VertexBuffer vb(nullptr, upperLimit * sizeof(Ripple::vertex), true);
 		IndexBuffer ib(nullptr, 6 * upperLimit, true);
 
 		/* Layout:
@@ -109,11 +102,23 @@ int main(void)
 
 		while (!glfwWindowShouldClose(window))
 		{
-			float vertices[upperLimit * sizeof(Vertex)];
+			{
+				std::vector<std::unique_ptr<Ripple>*> ripplesToDelete;
+				for (const auto& ripple : ripplePool)
+				{
+					if (ripple->deletePending)
+						ripplesToDelete.push_back(const_cast<std::unique_ptr<Ripple>*>(&ripple));
+				}
+
+				for (const auto& ripple : ripplesToDelete)
+					ripplePool.erase(*ripple);
+			}
+
+			float vertices[upperLimit * sizeof(Ripple::vertex)];
 			size_t index = 0;
 			for (const auto &ripple : ripplePool)
 			{
-				auto positions = ripple->getPositions();
+				auto positions = ripple->GetAsArray();
 				std::memcpy(vertices + (index * positions.size()), positions.data(), positions.size() * sizeof(float));
 				index++;
 			}
@@ -130,17 +135,21 @@ int main(void)
 				std::memcpy(indices + (i * indice.size()), indice.data(), indice.size() * sizeof(unsigned int));
 			}
 
-			glm::mat4 proj = glm::ortho(0.0f, static_cast<float>(windowWidth), 0.0f, static_cast<float>(windowHeight), -1.0f, 1.0f);
-			glm::mat4 mvp = proj;
-			shader.SetUniformMat4f("u_MVP", mvp);
+			{
+				glm::mat4 proj = glm::ortho(0.0f, static_cast<float>(windowWidth), 0.0f, static_cast<float>(windowHeight), -1.0f, 1.0f);
+				glm::mat4 mvp = proj;
+				shader.SetUniformMat4f("u_MVP", mvp);
+			}
 
 			vb.Populate(sizeof(vertices), vertices);
 			va.AddBufferAndLayout(vb, layout);
-
 			ib.Populate(sizeof(indices), indices);
 
-			renderer.Clear();
+			for (const auto &ripple : ripplePool)
+				ripple->UpdateRadius();
 
+			std::memset(vertices, 0, sizeof(vertices));
+			renderer.Clear();
 			renderer.Draw(va, ib, shader);
 
 			glfwSwapBuffers(window);
