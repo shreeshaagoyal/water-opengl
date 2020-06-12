@@ -14,6 +14,7 @@
 #include <utility>
 #include <algorithm>
 #include <chrono>
+#include <array>
 
 #include "util.h"
 #include "VertexBuffer.h"

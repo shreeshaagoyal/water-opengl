@@ -4,13 +4,19 @@
 
 struct Ripple
 {
-	double xpos;
-	double ypos;
-	float radius;
-	float radiusInc;
-	float maxRadius;
-	float thickness;
+	struct {
+		float xpos;
+		float ypos;
+	} data;
+		float radius;
+		float radiusInc;
+		float maxRadius;
+		float thickness;
+	//} data;
 	bool deletePending = false;
-	Ripple(double xpos_, double ypos_, float radius_, float radiusInc_, float maxRadius_, float thickness_);
-	void UpdateRadius(Shader& shader);
+	Ripple(float xpos_, float ypos_);
+	Ripple(float xpos_, float ypos_, float radius_, float radiusInc_, float maxRadius_, float thickness_);
+	void UpdateRadius();
+	auto getAsArray();
+	std::array<float, 5 * 4> getPositions();
 };
