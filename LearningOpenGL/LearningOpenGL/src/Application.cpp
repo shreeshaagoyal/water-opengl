@@ -12,7 +12,7 @@ void insertRipple(float xpos, float ypos)
 {
 	auto now = std::chrono::steady_clock::now();
 	auto msSinceLastRipple = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRippleTime).count();
-	if (msSinceLastRipple > 200)
+	if (msSinceLastRipple > 100)
 	{
 		ripplePool.insert(std::make_unique<Ripple>(xpos, ypos, 0.0f, defaultRadiusInc, 140.0f));
 		lastRippleTime = now;
@@ -75,7 +75,7 @@ int main(void)
 
 		const size_t upperLimit = 1000;
 
-		VertexBuffer vb(nullptr, upperLimit * sizeof(Ripple::vertex), true);
+		VertexBuffer vb(nullptr, upperLimit * 4 * sizeof(Ripple::vertex), true);
 		IndexBuffer ib(nullptr, 6 * upperLimit, true);
 
 		/* Layout:
