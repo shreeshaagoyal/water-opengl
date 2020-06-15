@@ -3,9 +3,21 @@
 int windowWidth = 960;
 int windowHeight = 540;
 
-float defaultRadiusInc = 2.0f;
-
 std::set<std::unique_ptr<Ripple>> ripplePool;
+
+std::default_random_engine generator;
+std::normal_distribution<float> distribution(3.0f, 1.0f);
+void createRipple(float xpos, float ypos)
+{
+	// Use normal distribution for number of ripples where mean = 3 and SD = 1
+	float roundedNumRipples = round(distribution(generator));
+	size_t numRipples = (roundedNumRipples > 0) ? static_cast<size_t>(roundedNumRipples) : 1;
+	for (size_t i = 0; i < numRipples; ++i)
+	{
+		float maxRadius_ = 400.0f;
+		ripplePool.insert(std::make_unique<Ripple>(xpos, ypos, i * (-50.0f), 2.0f, maxRadius_));
+	}
+}
 
 auto lastRippleTime = std::chrono::steady_clock::now();
 void insertRipple(float xpos, float ypos)
@@ -14,7 +26,7 @@ void insertRipple(float xpos, float ypos)
 	auto msSinceLastRipple = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastRippleTime).count();
 	if (msSinceLastRipple > 100)
 	{
-		ripplePool.insert(std::make_unique<Ripple>(xpos, ypos, 0.0f, defaultRadiusInc, 140.0f));
+		createRipple(xpos, ypos);
 		lastRippleTime = now;
 	}
 }
@@ -28,6 +40,15 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		std::cout << "[" << xpos << "," << ypos << "]" << std::endl;
 		insertRipple(static_cast<float>(xpos), static_cast<float>(windowHeight - ypos));
 	}
+}
+
+void window_size_callback(GLFWwindow* window, int width, int height)
+{
+	windowWidth = width;
+	windowHeight = height;
+	const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+	glViewport(0, 0, width, height);
+
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -45,6 +66,8 @@ int main(void)
 	if (!glfwInit())
 		return -1;
 
+	GetDesktopResolution(windowWidth, windowHeight);
+
 	SwitchToCoreProfile();
 
 	window = glfwCreateWindow(windowWidth, windowHeight, "Hello World", NULL, NULL);
@@ -59,6 +82,7 @@ int main(void)
 
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
 	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetWindowSizeCallback(window, window_size_callback);
 
 	if (glewInit() != GLEW_OK)
 		return -1;
@@ -88,8 +112,12 @@ int main(void)
 		layout.Push<float>(2);
 		layout.Push<float>(1);
 
+		// Set background color
+		glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+
 		Shader shader("res/shaders/vertex.shader", "res/shaders/fragment.shader");
-		shader.SetUniform4f("u_Color", 0.6f, 1.0f, 0.9f, 1.0f);
+		// Set ripple color
+		shader.SetUniform4f("u_Color", 0.9f, 0.9f, 0.9f, 1.0f);
 
 		VertexArray va;
 		Renderer renderer;

@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <chrono>
 #include <array>
+#include <random>
+#include <cmath>
 
 #include "util.h"
 #include "VertexBuffer.h"

@@ -72,3 +72,12 @@ void EnableBasicBlending()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 }
+
+void GetDesktopResolution(int &width, int &height)
+{
+	RECT desktop;
+	const HWND desktopHandle = GetDesktopWindow();
+	GetWindowRect(desktopHandle, &desktop);
+	width = desktop.right;
+	height = desktop.bottom - 50;
+}

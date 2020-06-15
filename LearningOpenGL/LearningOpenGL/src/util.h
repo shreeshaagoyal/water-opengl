@@ -7,3 +7,4 @@ void EnableGLDebugCallback();
 void PrintOpenGlVersionInfo();
 void SwitchToCoreProfile();
 void EnableBasicBlending();
+void GetDesktopResolution(int &width, int &height);
