@@ -1,2 +1,2 @@
-# learning-opengl
-Learning Modern OpenGL
+# water-opengl
+Water simulation using OpenGL
